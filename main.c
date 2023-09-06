@@ -8,10 +8,12 @@
 #include <stdio.h>
 #include "cbmp.h"
 
-void set_pixel(int x, int y, int val, unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS]){
-  for(int c = 0; c < 3; c++){
-    output_image[x][y][c] = val;
-  }
+void set_pixel(int x, int y, unsigned char val, unsigned char input_image[BMP_WIDTH][BMP_HEIGHT]){
+  input_image[x][y] = val;
+}
+
+unsigned char get_pixel(int x, int y, unsigned char input_image[BMP_WIDTH][BMP_HEIGHT]){
+  return input_image[x][y];
 }
 
 //Function to invert pixels of an image (negative)
@@ -79,6 +81,12 @@ int main(int argc, char** argv)
 
   //Run inversion
   convert_grayscale(rgb_image,gray_image);
+
+  set_pixel(1,1,255,gray_image);
+
+  unsigned char c1 = get_pixel(1,1,gray_image);
+
+  printf("%hhu \n", c1);
 
   convert_rgb(gray_image, rgb_image);
 
