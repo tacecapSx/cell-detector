@@ -1,6 +1,16 @@
 # cell-detector
 A solution to assignment 1 of Computer Systems (02132) made by Martin Handest [s224755] ([@tacecapSx](https://github.com/tacecapSx)) and Oskar Holland [s224768] ([@pandekagee](https://github.com/pandekagee)) in C.
 
+## Algorithm Progress
+- [x] Load input image
+- [x] Convert to gray-scale
+- [x] Apply binary threshold
+- [ ] Erode image
+- [ ] Detect spots (cells)
+- [ ] Generate output image (mark cells)
+- [x] Save output image
+- [ ] Print results
+
 ## Original Assignment Readme:
 This folder contains code and material for the Assignment 1.
 

@@ -55,6 +55,16 @@ void convert_rgb(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned char
   }
 }
 
+void apply_threshold(unsigned char threshold, unsigned char input_image[BMP_WIDTH][BMP_HEIGHT]) {
+  for(int x = 0; x < BMP_WIDTH; x++)
+  {
+    for(int y = 0; y < BMP_HEIGHT; y++)
+    {
+      input_image[x][y] = (input_image[x][y] >= threshold) * 255;
+    }
+  }
+}
+
   //Declaring the array to store the image (unsigned char = unsigned 8 bit)
   unsigned char rgb_image[BMP_WIDTH][BMP_HEIGHT][BMP_CHANNELS];
   unsigned char gray_image[BMP_WIDTH][BMP_HEIGHT];
@@ -87,6 +97,8 @@ int main(int argc, char** argv)
   unsigned char c1 = get_pixel(1,1,gray_image);
 
   printf("%hhu \n", c1);
+
+  apply_threshold(100, gray_image);
 
   convert_rgb(gray_image, rgb_image);
 
