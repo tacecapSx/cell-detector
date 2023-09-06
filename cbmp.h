@@ -2,7 +2,7 @@
 #define CBMP_CBMP_H
 
 #define BMP_WIDTH 950
-#define BMP_HEIGTH 950
+#define BMP_HEIGHT 950
 #define BMP_CHANNELS 3
 
 // Public function declarations
