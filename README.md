@@ -1,7 +1,7 @@
 # cell-detector
-A solution to assignment 1 of Computer Systems (02132) made by Martin Handest [s224755] (@tacecapSx) and Oskar Holland [s224768] (@pandekagee).
+A solution to assignment 1 of Computer Systems (02132) made by Martin Handest [s224755] ([@tacecapSx](https://github.com/tacecapSx)) and Oskar Holland [s224768] ([@pandekagee](https://github.com/pandekagee)) in C.
 
-# Original Assignment Readme:
+## Original Assignment Readme:
 This folder contains code and material for the Assignment 1.
 
 To help you get started, we provide you with the library 'cbmp.h' + 'cbmp.c' to load and save images to bmp files. The description of the functions offered by this library is provided in the assignment document (in the Algorithm Step 1 and Step 7 descriptions).
