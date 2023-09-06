@@ -8,6 +8,12 @@
 #include <stdio.h>
 #include "cbmp.h"
 
+void set_pixel(int x, int y, int val, unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS]){
+  for(int c = 0; c < 3; c++){
+    output_image[x][y][c] = val;
+  }
+}
+
 //Function to invert pixels of an image (negative)
 void invert(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS], unsigned char output_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS]){
   for (int x = 0; x < BMP_WIDTH; x++)
