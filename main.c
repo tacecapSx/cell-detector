@@ -17,10 +17,22 @@
   #define EROSION_MASK_WIDTH 3
   #define EROSION_MASK_HEIGHT 3
 
-  int erosion_mask[EROSION_MASK_WIDTH][EROSION_MASK_HEIGHT] = {
+  int plus_erosion_mask[EROSION_MASK_WIDTH][EROSION_MASK_HEIGHT] = {
     {0, 1, 0},
     {1, 1, 1},
     {0, 1, 0}
+  };
+
+  int x_erosion_mask[EROSION_MASK_WIDTH][EROSION_MASK_HEIGHT] = {
+    {1, 0, 1},
+    {0, 1, 0},
+    {1, 0, 1}
+  };
+
+  int solid_erosion_mask[EROSION_MASK_WIDTH][EROSION_MASK_HEIGHT] = {
+    {1, 1, 1},
+    {1, 1, 1},
+    {1, 1, 1}
   };
 
 void set_pixel(int x, int y, unsigned char val, unsigned char input_image[BMP_WIDTH][BMP_HEIGHT]){
@@ -80,6 +92,18 @@ void apply_threshold(unsigned char threshold, unsigned char input_image[BMP_WIDT
   }
 }
 
+int clamp(int val, int min, int max) {
+  if(val < min) {
+    return min;
+  }
+
+  if(val > max) {
+    return max;
+  }
+
+  return val;
+}
+
 void apply_erosion(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned char output_image[BMP_WIDTH][BMP_HEIGHT], int erosion_mask[EROSION_MASK_WIDTH][EROSION_MASK_HEIGHT]) {
   for(int x = 0; x < BMP_WIDTH; x++)
   {
@@ -89,7 +113,7 @@ void apply_erosion(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned ch
       {
         for(int y_offset = 0; y_offset < EROSION_MASK_HEIGHT; y_offset++)
         {
-          if(erosion_mask[x_offset][y_offset] == 1 && input_image[x - 1 + x_offset][y - 1 + y_offset] == 0) {
+          if(erosion_mask[x_offset][y_offset] == 1 && input_image[clamp(x - 1 + x_offset, 0, BMP_WIDTH - 1)][clamp(y - 1 + y_offset,0,BMP_HEIGHT - 1)] == 0) {
             output_image[x][y] = 0;
             goto exit;
           }
@@ -103,7 +127,21 @@ void apply_erosion(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned ch
   }
 }
 
-void save_grayscale_image(char file_name[10], unsigned char gray_image[BMP_WIDTH][BMP_HEIGHT], unsigned char rgb_image[BMP_WIDTH][BMP_HEIGHT][BMP_CHANNELS]) {
+unsigned char get_average_color(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT]) {
+  int sum = 0;
+
+  for(int x = 0; x < BMP_WIDTH; x++)
+  {
+    for(int y = 0; y < BMP_HEIGHT; y++)
+    {
+      sum += (int)input_image[x][y];
+    }
+  }
+
+  return sum / (BMP_WIDTH * BMP_HEIGHT);
+}
+
+void save_grayscale_image(char file_name[11], unsigned char gray_image[BMP_WIDTH][BMP_HEIGHT], unsigned char rgb_image[BMP_WIDTH][BMP_HEIGHT][BMP_CHANNELS]) {
   // Convert back to RGB
   convert_rgb(gray_image, rgb_image);
 
@@ -136,6 +174,10 @@ int main(int argc, char** argv)
   convert_grayscale(rgb_image,gray_image);
   save_grayscale_image("Step2.bmp",gray_image, rgb_image);
 
+  unsigned char average_color = get_average_color(gray_image);
+
+  printf("Average color: %d \n", average_color);
+
   // Set pixel test
   set_pixel(1,1,255,gray_image);
 
@@ -149,12 +191,12 @@ int main(int argc, char** argv)
     sprintf(file_name,"Step%d.bmp", s);
     printf("%d\n", s);
 
-    if(s % 2 == 1) {
-      apply_erosion(new_gray_image, gray_image, erosion_mask);
+    if(s % 2) {
+      apply_erosion(new_gray_image, gray_image, x_erosion_mask);
       save_grayscale_image(file_name,gray_image, rgb_image);
     }
     else {
-      apply_erosion(gray_image, new_gray_image, erosion_mask);
+      apply_erosion(gray_image, new_gray_image, plus_erosion_mask);
       save_grayscale_image(file_name,new_gray_image, rgb_image);
     }
   }
