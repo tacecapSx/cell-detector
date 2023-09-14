@@ -23,10 +23,34 @@
     {0, 1, 0}
   };
 
+  int v_erosion_mask[EROSION_MASK_WIDTH][EROSION_MASK_HEIGHT] = {
+    {0, 1, 0},
+    {0, 1, 0},
+    {0, 1, 0}
+  };
+
+  int h_erosion_mask[EROSION_MASK_WIDTH][EROSION_MASK_HEIGHT] = {
+    {0, 0, 0},
+    {1, 1, 1},
+    {0, 0, 0}
+  };
+
   int x_erosion_mask[EROSION_MASK_WIDTH][EROSION_MASK_HEIGHT] = {
     {1, 0, 1},
     {0, 1, 0},
     {1, 0, 1}
+  };
+
+  int BEAN_erosion_mask[EROSION_MASK_WIDTH][EROSION_MASK_HEIGHT] = {
+    {0, 1, 1},
+    {1, 1, 1},
+    {1, 1, 0}
+  };
+
+  int mBEAN_erosion_mask[EROSION_MASK_WIDTH][EROSION_MASK_HEIGHT] = {
+    {1, 1, 0},
+    {1, 1, 1},
+    {0, 1, 1}
   };
 
   int solid_erosion_mask[EROSION_MASK_WIDTH][EROSION_MASK_HEIGHT] = {
@@ -113,7 +137,7 @@ void apply_erosion(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned ch
       {
         for(int y_offset = 0; y_offset < EROSION_MASK_HEIGHT; y_offset++)
         {
-          if(erosion_mask[x_offset][y_offset] == 1 && input_image[clamp(x - 1 + x_offset, 0, BMP_WIDTH - 1)][clamp(y - 1 + y_offset,0,BMP_HEIGHT - 1)] == 0) {
+          if(erosion_mask[x_offset][y_offset] == 1 && input_image[clamp(x - (EROSION_MASK_WIDTH-1) / 2 + x_offset, 0, BMP_WIDTH - 1)][clamp(y  - (EROSION_MASK_HEIGHT-1) / 2 + y_offset,0,BMP_HEIGHT - 1)] == 0) {
             output_image[x][y] = 0;
             goto exit;
           }
@@ -149,6 +173,75 @@ void save_grayscale_image(char file_name[11], unsigned char gray_image[BMP_WIDTH
   write_bitmap(rgb_image, file_name);
 }
 
+int count_cells(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned char rgb_image[BMP_WIDTH][BMP_HEIGHT][BMP_CHANNELS]){
+  int check_width = 12;
+  int check_height = 12;
+  int found = 0;
+
+  int count = 0;
+  
+  //loop through grid and area
+  for(int i = -1; i < BMP_WIDTH+1; i ++){
+    for(int j = -1; j < BMP_HEIGHT+1; j ++){
+      for(int k = 1; k < check_width-2; k++){
+        if (input_image[k + i][j+check_height/2] == 255){
+          found = 1;
+          if (found == 1){
+            break;
+          }
+        }
+      }
+
+      for(int k = 1; k < check_height-2; k++){
+        if (input_image[i + check_width/2][j + k] == 255){
+          found = 1;
+
+          if (found == 1){
+            break;
+          }
+        }
+      }
+
+      if (found == 1){
+        for(int k = 1; k < check_width-1; k++){
+          if ((input_image[i + k][j] == 255 || input_image[i + k][j + check_height-1] == 255) && clamp(i, 0, BMP_WIDTH-1)){
+            found = 0;
+            break;
+          }
+        }
+
+        for(int k = 0; k < check_height; k++){
+          if ((input_image[i][j + k] == 255 || input_image[i + check_width-1][j + k] == 255) && clamp(j, 0, BMP_HEIGHT-1)){
+            found = 0;
+            break;
+          }
+        }
+      }
+
+      if (found == 1){
+
+        for(int k = 0; k < 4; k ++){
+          for(int l = 0; l < 4; l ++){
+            rgb_image[i+k + check_width/2][j + l + check_height / 2][0] = 255;
+            rgb_image[i+k + check_width/2][j + l + check_height / 2][1] = 0;
+            rgb_image[i+k + check_width/2][j + l + check_height / 2][2] = 0;
+          }
+        }
+
+        count++;
+        for(int k = 1; k < check_width - 1; k ++){
+          for(int l = 1; l < check_height - 1; l ++){
+            input_image[i + k][j + l] = 0;
+          }
+        }
+        found = 0;
+      }
+    }
+  }
+
+  return count;
+}
+
 //Main function
 int main(int argc, char** argv)
 {
@@ -156,6 +249,8 @@ int main(int argc, char** argv)
   //argv[0] is a string with the name of the program
   //argv[1] is the first command line argument (input image)
   //argv[2] is the second command line argument (output image)
+
+  int cell_amount = 0;
 
   //Checking that 2 arguments are passed
   if (argc != 3)
@@ -172,34 +267,37 @@ int main(int argc, char** argv)
 
   // Convert to grayscale
   convert_grayscale(rgb_image,gray_image);
-  save_grayscale_image("Step2.bmp",gray_image, rgb_image);
+  //save_grayscale_image("Step2.bmp",gray_image, rgb_image);
 
   unsigned char average_color = get_average_color(gray_image);
 
   printf("Average color: %d \n", average_color);
 
-  // Set pixel test
-  set_pixel(1,1,255,gray_image);
-
   // apply threshold
   apply_threshold(100, gray_image);
-  save_grayscale_image("Step3.bmp",gray_image, rgb_image);
+  //save_grayscale_image("Step3.bmp",gray_image, rgb_image);
 
   char file_name[11];
   // Erode from step 4 onwards...
-  for(int s = 4; s < 14; s++) {
+  for(int s = 4; s < 18; s++) {
     sprintf(file_name,"Step%d.bmp", s);
-    printf("%d\n", s);
+    printf("s is: %d\n", s);
+
+    cell_amount += count_cells(gray_image, rgb_image);
 
     if(s % 2) {
-      apply_erosion(new_gray_image, gray_image, x_erosion_mask);
-      save_grayscale_image(file_name,gray_image, rgb_image);
+      apply_erosion(new_gray_image, gray_image, plus_erosion_mask);
+      //save_grayscale_image(file_name,gray_image, rgb_image);
     }
     else {
-      apply_erosion(gray_image, new_gray_image, plus_erosion_mask);
-      save_grayscale_image(file_name,new_gray_image, rgb_image);
+      apply_erosion(gray_image, new_gray_image, x_erosion_mask);
+      //save_grayscale_image(file_name,new_gray_image, rgb_image);
     }
   }
+
+  write_bitmap(rgb_image, "Step1.bmp");
+
+  printf("Cell Amount is: %i\n", cell_amount);
 
   printf("Done!\n");
   return 0;
