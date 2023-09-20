@@ -15,51 +15,6 @@
   unsigned char gray_image[BMP_WIDTH][BMP_HEIGHT];
   unsigned char new_gray_image[BMP_WIDTH][BMP_HEIGHT];
 
-  #define EROSION_MASK_WIDTH 3
-  #define EROSION_MASK_HEIGHT 3
-
-  int plus_erosion_mask[EROSION_MASK_WIDTH][EROSION_MASK_HEIGHT] = {
-    {0, 1, 0},
-    {1, 1, 1},
-    {0, 1, 0}
-  };
-
-  int v_erosion_mask[EROSION_MASK_WIDTH][EROSION_MASK_HEIGHT] = {
-    {0, 1, 0},
-    {0, 1, 0},
-    {0, 1, 0}
-  };
-
-  int h_erosion_mask[EROSION_MASK_WIDTH][EROSION_MASK_HEIGHT] = {
-    {0, 0, 0},
-    {1, 1, 1},
-    {0, 0, 0}
-  };
-
-  int x_erosion_mask[EROSION_MASK_WIDTH][EROSION_MASK_HEIGHT] = {
-    {1, 0, 1},
-    {0, 1, 0},
-    {1, 0, 1}
-  };
-
-  int BEAN_erosion_mask[EROSION_MASK_WIDTH][EROSION_MASK_HEIGHT] = {
-    {0, 1, 1},
-    {1, 1, 1},
-    {1, 1, 0}
-  };
-
-  int mBEAN_erosion_mask[EROSION_MASK_WIDTH][EROSION_MASK_HEIGHT] = {
-    {1, 1, 0},
-    {1, 1, 1},
-    {0, 1, 1}
-  };
-
-  int solid_erosion_mask[EROSION_MASK_WIDTH][EROSION_MASK_HEIGHT] = {
-    {1, 1, 1},
-    {1, 1, 1},
-    {1, 1, 1}
-  };
-
 void set_pixel(int x, int y, unsigned char val, unsigned char input_image[BMP_WIDTH][BMP_HEIGHT]){
   input_image[x][y] = val;
 }
@@ -117,6 +72,36 @@ void apply_threshold(unsigned char threshold, unsigned char input_image[BMP_WIDT
   }
 }
 
+void seperate_cells(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT]){
+  int check_width = 20;
+  int check_height = 20;
+  int found = 0;
+  int offset = 8;
+
+  for(int i = 0; i < BMP_WIDTH-check_width; i ++){
+    for(int j = 0; j < BMP_HEIGHT-check_height; j ++){
+      found = 0;
+      if (input_image[i+offset][j+offset] == 255 && input_image[i+check_width-offset][j+check_height-offset] == 255
+      && input_image[i+(check_width-1)/2][j+(check_height-1)/2] == 255 && input_image[i+check_width-offset][j+offset] == 255
+      && input_image[i+offset][j+check_height-offset] == 255){
+        found = 1;
+      }
+
+      if (found == 1){
+        for(int k = 0; k < check_width; k++){
+          input_image[i+k][j] = 0;
+          input_image[i+k][j+check_height] = 0;
+        }
+
+        for(int k = 0; k < check_height; k++){
+          input_image[i][j+k] = 0;
+          input_image[i+check_width][j+k] = 0;
+        }
+      }
+    }
+  }
+}
+
 int clamp(int val, int min, int max) {
   if(val < min) {
     return min;
@@ -129,25 +114,38 @@ int clamp(int val, int min, int max) {
   return val;
 }
 
-void apply_erosion(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned char output_image[BMP_WIDTH][BMP_HEIGHT], int erosion_mask[EROSION_MASK_WIDTH][EROSION_MASK_HEIGHT]) {
+void apply_erosion(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned char output_image[BMP_WIDTH][BMP_HEIGHT], int min_neighbors, int width, int height) {
   for(int x = 0; x < BMP_WIDTH; x++)
   {
     for(int y = 0; y < BMP_HEIGHT; y++)
     {
-      for(int x_offset = 0; x_offset < EROSION_MASK_WIDTH; x_offset++)
+      int counter = 0;
+      for(int x_offset = 0; x_offset < width; x_offset++)
       {
-        for(int y_offset = 0; y_offset < EROSION_MASK_HEIGHT; y_offset++)
+        for(int y_offset = 0; y_offset < height; y_offset++)
         {
-          if(erosion_mask[x_offset][y_offset] == 1 && input_image[clamp(x - (EROSION_MASK_WIDTH-1) / 2 + x_offset, 0, BMP_WIDTH - 1)][clamp(y  - (EROSION_MASK_HEIGHT-1) / 2 + y_offset,0,BMP_HEIGHT - 1)] == 0) {
+          if(input_image[clamp(x-(width-1) / 2+x_offset,0,BMP_WIDTH-1)][clamp(y-(height-1) / 2+y_offset,0,BMP_HEIGHT-1)]) {
+            counter++;
+          }
+          
+          /*if(erosion_mask[x_offset][y_offset] == 1 && input_image[clamp(x - (EROSION_MASK_WIDTH-1) / 2 + x_offset, 0, BMP_WIDTH - 1)][clamp(y  - (EROSION_MASK_HEIGHT-1) / 2 + y_offset,0,BMP_HEIGHT - 1)] == 0) {
             output_image[x][y] = 0;
             goto exit;
-          }
+          }*/
 
-          output_image[x][y] = 255;
+          //output_image[x][y] = 255;
         }
       }
-      exit:
-      continue;
+
+      if(input_image[x][y] == 255 && counter > min_neighbors) {
+        output_image[x][y] = 255;
+      }
+      else {
+        output_image[x][y] = 0;
+      }
+      
+      //exit:
+      //continue;
     }
   }
 }
@@ -184,19 +182,6 @@ int count_cells(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned char 
   //loop through grid and area
   for(int i = -1; i < BMP_WIDTH+1; i ++){
     for(int j = -1; j < BMP_HEIGHT+1; j ++){
-      /*for(int k = 1; k < check_width-1; k++){
-        if (input_image[k + i][j+check_height/2] == 255){
-          found = 1;
-          break;
-        }
-      }
-
-      for(int k = 1; k < check_height-1; k++){
-        if (input_image[i + check_width/2][j + k] == 255){
-          found = 1;
-          break;
-        }
-      }*/
       if (input_image[i + (check_width-1)/2][j+(check_height-1)/2] == 255){
         found = 1;
       }
@@ -276,23 +261,31 @@ int main(int argc, char** argv)
 
   // apply threshold
   apply_threshold(95, gray_image);
-  //save_grayscale_image("Step3.bmp",gray_image, rgb_image);
+  save_grayscale_image("Step2.bmp",gray_image, rgb_image);
+
+  // separate cells
+  seperate_cells(gray_image);
+  save_grayscale_image("Step3.bmp",gray_image, rgb_image);
+
+  // apply initial, aggressive erotion
+  apply_erosion(gray_image, new_gray_image, 21, 5, 5);
+  save_grayscale_image("Step4.bmp",new_gray_image, rgb_image);
 
   char file_name[11];
-  // Erode from step 4 onwards...
-  for(int s = 4; s < 20; s++) {
+  // Erode from step 5 onwards...
+  for(int s = 5; s < 20; s++) {
     sprintf(file_name,"Step%d.bmp", s);
     printf("s is: %d\n", s);
 
     //cell_amount += count_cells(gray_image, rgb_image);
 
     if(s % 2) {
-      apply_erosion(new_gray_image, gray_image, x_erosion_mask);
+      apply_erosion(new_gray_image, gray_image, 7, 3, 3);
       cell_amount += count_cells(gray_image, final_image);
       save_grayscale_image(file_name,gray_image, rgb_image);
     }
     else {
-      apply_erosion(gray_image, new_gray_image, plus_erosion_mask);
+      apply_erosion(gray_image, new_gray_image, 7, 3, 3);
       cell_amount += count_cells(new_gray_image, final_image);
       save_grayscale_image(file_name,new_gray_image, rgb_image);
     }
