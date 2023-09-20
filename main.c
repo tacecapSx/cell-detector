@@ -114,7 +114,8 @@ int clamp(int val, int min, int max) {
   return val;
 }
 
-void apply_erosion(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned char output_image[BMP_WIDTH][BMP_HEIGHT], int min_neighbors, int width, int height) {
+int apply_erosion(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned char output_image[BMP_WIDTH][BMP_HEIGHT], int min_neighbors, int width, int height) {
+  int total_dark = 0;
   for(int x = 0; x < BMP_WIDTH; x++)
   {
     for(int y = 0; y < BMP_HEIGHT; y++)
@@ -127,13 +128,6 @@ void apply_erosion(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned ch
           if(input_image[clamp(x-(width-1) / 2+x_offset,0,BMP_WIDTH-1)][clamp(y-(height-1) / 2+y_offset,0,BMP_HEIGHT-1)]) {
             counter++;
           }
-          
-          /*if(erosion_mask[x_offset][y_offset] == 1 && input_image[clamp(x - (EROSION_MASK_WIDTH-1) / 2 + x_offset, 0, BMP_WIDTH - 1)][clamp(y  - (EROSION_MASK_HEIGHT-1) / 2 + y_offset,0,BMP_HEIGHT - 1)] == 0) {
-            output_image[x][y] = 0;
-            goto exit;
-          }*/
-
-          //output_image[x][y] = 255;
         }
       }
 
@@ -142,12 +136,12 @@ void apply_erosion(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned ch
       }
       else {
         output_image[x][y] = 0;
+        total_dark++;
       }
-      
-      //exit:
-      //continue;
     }
   }
+
+  return total_dark == BMP_WIDTH * BMP_HEIGHT;
 }
 
 unsigned char get_average_color(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT]) {
@@ -201,9 +195,8 @@ int count_cells(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned char 
       }
 
       if (found == 1){
-
-        for(int k = -2; k < 2; k ++){
-          for(int l = -2; l < 2; l ++){
+        for(int k = 0; k < 6; k ++){
+          for(int l = 0; l < 6; l ++){
             rgb_image[i+k + check_width/2][j + l + check_height / 2][0] = 255;
             rgb_image[i+k + check_width/2][j + l + check_height / 2][1] = 0;
             rgb_image[i+k + check_width/2][j + l + check_height / 2][2] = 0;
@@ -233,7 +226,6 @@ int main(int argc, char** argv)
   //argc counts how may arguments are passed
   //argv[0] is a string with the name of the program
   //argv[1] is the first command line argument (input image)
-  //argv[2] is the second command line argument (output image)
 
   int cell_amount = 0;
 
@@ -244,8 +236,6 @@ int main(int argc, char** argv)
       exit(1);
   }
 
-  printf("Example program - 02132 - A1\n");
-
   //Load image from file
   read_bitmap(argv[1], rgb_image);
   read_bitmap(argv[1], final_image);
@@ -253,11 +243,6 @@ int main(int argc, char** argv)
 
   // Convert to grayscale
   convert_grayscale(rgb_image,gray_image);
-  //save_grayscale_image("Step2.bmp",gray_image, rgb_image);
-
-  unsigned char average_color = get_average_color(gray_image);
-
-  printf("Average color: %d \n", average_color);
 
   // apply threshold
   apply_threshold(95, gray_image);
@@ -272,26 +257,28 @@ int main(int argc, char** argv)
   save_grayscale_image("Step4.bmp",new_gray_image, rgb_image);
 
   char file_name[11];
-  // Erode from step 5 onwards...
+  // Erode from step 5 onwards... (maxing out at 20 - 5 = 15 erosion steps, less will be needed.)
   for(int s = 5; s < 20; s++) {
     sprintf(file_name,"Step%d.bmp", s);
-    printf("s is: %d\n", s);
-
-    //cell_amount += count_cells(gray_image, rgb_image);
+    printf("Erosion step: %d\n", s - 4);
 
     if(s % 2) {
-      apply_erosion(new_gray_image, gray_image, 7, 3, 3);
+      if(apply_erosion(new_gray_image, gray_image, 7, 3, 3)) {
+        break;
+      }
       cell_amount += count_cells(gray_image, final_image);
       save_grayscale_image(file_name,gray_image, rgb_image);
     }
     else {
-      apply_erosion(gray_image, new_gray_image, 7, 3, 3);
+      if(apply_erosion(gray_image, new_gray_image, 7, 3, 3)) {
+        break;
+      }
       cell_amount += count_cells(new_gray_image, final_image);
       save_grayscale_image(file_name,new_gray_image, rgb_image);
     }
   }
 
-  write_bitmap(final_image, "Step20.bmp");
+  write_bitmap(final_image, "output.bmp");
 
   printf("Cell Amount is: %i\n", cell_amount);
 
