@@ -175,8 +175,8 @@ void save_grayscale_image(char file_name[11], unsigned char gray_image[BMP_WIDTH
 }
 
 int count_cells(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned char rgb_image[BMP_WIDTH][BMP_HEIGHT][BMP_CHANNELS]){
-  int check_width = 7;
-  int check_height = 7;
+  int check_width = 8;
+  int check_height = 8;
   int found = 0;
 
   int count = 0;
@@ -184,7 +184,7 @@ int count_cells(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned char 
   //loop through grid and area
   for(int i = -1; i < BMP_WIDTH+1; i ++){
     for(int j = -1; j < BMP_HEIGHT+1; j ++){
-      for(int k = 1; k < check_width-1; k++){
+      /*for(int k = 1; k < check_width-1; k++){
         if (input_image[k + i][j+check_height/2] == 255){
           found = 1;
           break;
@@ -196,6 +196,9 @@ int count_cells(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned char 
           found = 1;
           break;
         }
+      }*/
+      if (input_image[i + (check_width-1)/2][j+(check_height-1)/2] == 255){
+        found = 1;
       }
 
       if (found == 1){
@@ -272,30 +275,30 @@ int main(int argc, char** argv)
   printf("Average color: %d \n", average_color);
 
   // apply threshold
-  apply_threshold(100, gray_image);
+  apply_threshold(95, gray_image);
   //save_grayscale_image("Step3.bmp",gray_image, rgb_image);
 
   char file_name[11];
   // Erode from step 4 onwards...
-  for(int s = 4; s < 18; s++) {
+  for(int s = 4; s < 20; s++) {
     sprintf(file_name,"Step%d.bmp", s);
     printf("s is: %d\n", s);
 
     //cell_amount += count_cells(gray_image, rgb_image);
 
     if(s % 2) {
-      apply_erosion(new_gray_image, gray_image, plus_erosion_mask);
+      apply_erosion(new_gray_image, gray_image, x_erosion_mask);
       cell_amount += count_cells(gray_image, final_image);
       save_grayscale_image(file_name,gray_image, rgb_image);
     }
     else {
-      apply_erosion(gray_image, new_gray_image, x_erosion_mask);
+      apply_erosion(gray_image, new_gray_image, plus_erosion_mask);
       cell_amount += count_cells(new_gray_image, final_image);
       save_grayscale_image(file_name,new_gray_image, rgb_image);
     }
   }
 
-  write_bitmap(final_image, "Step18.bmp");
+  write_bitmap(final_image, "Step20.bmp");
 
   printf("Cell Amount is: %i\n", cell_amount);
 
