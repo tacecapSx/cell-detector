@@ -11,6 +11,7 @@
 // Declaring variables
   //Declaring the array to store the image (unsigned char = unsigned 8 bit)
   unsigned char rgb_image[BMP_WIDTH][BMP_HEIGHT][BMP_CHANNELS];
+  unsigned char final_image[BMP_WIDTH][BMP_HEIGHT][BMP_CHANNELS];
   unsigned char gray_image[BMP_WIDTH][BMP_HEIGHT];
   unsigned char new_gray_image[BMP_WIDTH][BMP_HEIGHT];
 
@@ -174,8 +175,8 @@ void save_grayscale_image(char file_name[11], unsigned char gray_image[BMP_WIDTH
 }
 
 int count_cells(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned char rgb_image[BMP_WIDTH][BMP_HEIGHT][BMP_CHANNELS]){
-  int check_width = 12;
-  int check_height = 12;
+  int check_width = 7;
+  int check_height = 7;
   int found = 0;
 
   int count = 0;
@@ -183,45 +184,38 @@ int count_cells(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned char 
   //loop through grid and area
   for(int i = -1; i < BMP_WIDTH+1; i ++){
     for(int j = -1; j < BMP_HEIGHT+1; j ++){
-      for(int k = 1; k < check_width-2; k++){
+      for(int k = 1; k < check_width-1; k++){
         if (input_image[k + i][j+check_height/2] == 255){
           found = 1;
-          if (found == 1){
-            break;
-          }
+          break;
         }
       }
 
-      for(int k = 1; k < check_height-2; k++){
+      for(int k = 1; k < check_height-1; k++){
         if (input_image[i + check_width/2][j + k] == 255){
           found = 1;
-
-          if (found == 1){
-            break;
-          }
+          break;
         }
       }
 
       if (found == 1){
-        for(int k = 1; k < check_width-1; k++){
-          if ((input_image[i + k][j] == 255 || input_image[i + k][j + check_height-1] == 255) && clamp(i, 0, BMP_WIDTH-1)){
-            found = 0;
-            break;
+        for(int k = 0; k < check_width; k++){
+          if ((input_image[i + k][j] == 255 || input_image[i + k][j + check_height-1] == 255)){
+            goto end;
           }
         }
 
         for(int k = 0; k < check_height; k++){
-          if ((input_image[i][j + k] == 255 || input_image[i + check_width-1][j + k] == 255) && clamp(j, 0, BMP_HEIGHT-1)){
-            found = 0;
-            break;
+          if ((input_image[i][j + k] == 255 || input_image[i + check_width-1][j + k] == 255)){
+            goto end;
           }
         }
       }
 
       if (found == 1){
 
-        for(int k = 0; k < 4; k ++){
-          for(int l = 0; l < 4; l ++){
+        for(int k = -2; k < 2; k ++){
+          for(int l = -2; l < 2; l ++){
             rgb_image[i+k + check_width/2][j + l + check_height / 2][0] = 255;
             rgb_image[i+k + check_width/2][j + l + check_height / 2][1] = 0;
             rgb_image[i+k + check_width/2][j + l + check_height / 2][2] = 0;
@@ -234,8 +228,11 @@ int count_cells(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned char 
             input_image[i + k][j + l] = 0;
           }
         }
-        found = 0;
+        
       }
+
+      end:
+      found = 0;
     }
   }
 
@@ -253,9 +250,9 @@ int main(int argc, char** argv)
   int cell_amount = 0;
 
   //Checking that 2 arguments are passed
-  if (argc != 3)
+  if (argc != 2)
   {
-      fprintf(stderr, "Usage: %s <output file path> <output file path>\n", argv[0]);
+      fprintf(stderr, "Usage: %s <input file path>\n", argv[0]);
       exit(1);
   }
 
@@ -263,6 +260,7 @@ int main(int argc, char** argv)
 
   //Load image from file
   read_bitmap(argv[1], rgb_image);
+  read_bitmap(argv[1], final_image);
   write_bitmap(rgb_image, "Step1.bmp");
 
   // Convert to grayscale
@@ -283,19 +281,21 @@ int main(int argc, char** argv)
     sprintf(file_name,"Step%d.bmp", s);
     printf("s is: %d\n", s);
 
-    cell_amount += count_cells(gray_image, rgb_image);
+    //cell_amount += count_cells(gray_image, rgb_image);
 
     if(s % 2) {
       apply_erosion(new_gray_image, gray_image, plus_erosion_mask);
-      //save_grayscale_image(file_name,gray_image, rgb_image);
+      cell_amount += count_cells(gray_image, final_image);
+      save_grayscale_image(file_name,gray_image, rgb_image);
     }
     else {
       apply_erosion(gray_image, new_gray_image, x_erosion_mask);
-      //save_grayscale_image(file_name,new_gray_image, rgb_image);
+      cell_amount += count_cells(new_gray_image, final_image);
+      save_grayscale_image(file_name,new_gray_image, rgb_image);
     }
   }
 
-  write_bitmap(rgb_image, "Step1.bmp");
+  write_bitmap(final_image, "Step18.bmp");
 
   printf("Cell Amount is: %i\n", cell_amount);
 
