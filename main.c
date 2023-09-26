@@ -153,7 +153,6 @@ int apply_erosion(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned cha
       }
     }
   }
-
   return total_dark == BMP_WIDTH * BMP_HEIGHT;
 }
 
@@ -278,20 +277,14 @@ int main(int argc, char** argv)
     sprintf(file_name,"step_%d.bmp", s);
     printf("Erosion Step: %d\n", s - 3);
 
-    if(s % 2) {
-      if(apply_erosion(new_gray_image, gray_image, 7, 3, 3)) { // 34 ms
-        break; // image is completely eroded
-      }
-      cell_amount += count_cells(gray_image, final_image, cell_x, cell_y, cell_amount); // 2 ms
-      save_grayscale_image(file_name,gray_image, rgb_image); // 22 ms
+    unsigned char (*input_image)[BMP_HEIGHT] = s % 2 ? gray_image : new_gray_image;
+    unsigned char (*output_image)[BMP_HEIGHT] = s % 2 ? new_gray_image : gray_image;
+
+    if(apply_erosion(input_image, output_image, 7, 3, 3)) { // 34 ms
+      break; // image is completely eroded
     }
-    else {
-      if(apply_erosion(gray_image, new_gray_image, 7, 3, 3)) { // 34 ms
-        break; // image is completely eroded
-      }
-      cell_amount += count_cells(new_gray_image, final_image, cell_x, cell_y, cell_amount); // 2 ms
-      save_grayscale_image(file_name,new_gray_image, rgb_image); // 22 ms
-    }
+    cell_amount += count_cells(output_image, final_image, cell_x, cell_y, cell_amount); // 2 ms
+    save_grayscale_image(file_name, output_image, rgb_image); // 22 ms
   }
 
   write_bitmap(final_image, "output_image.bmp");
