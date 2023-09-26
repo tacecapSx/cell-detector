@@ -255,39 +255,39 @@ int main(int argc, char** argv)
   // 1: Load image from file
   read_bitmap(argv[1], rgb_image);
   read_bitmap(argv[1], final_image);
-  write_bitmap(rgb_image, "step_1.bmp");
+  write_bitmap(rgb_image, "step_0.bmp");
 
   // Convert to grayscale
   convert_grayscale(rgb_image,gray_image); // 3 ms
 
   // 2: Apply binary threshold
   apply_threshold(95, gray_image); // 1 ms
-  save_grayscale_image("step_2.bmp",gray_image, rgb_image); // 22 ms
+  save_grayscale_image("step_1.bmp",gray_image, rgb_image); // 22 ms
 
   // 3: Separate cells
   separate_cells(gray_image); // 2 ms
-  save_grayscale_image("step_3.bmp",gray_image, rgb_image); // 22 ms
+  save_grayscale_image("step_2.bmp",gray_image, rgb_image); // 22 ms
 
-  // 4: Apply initial, aggressive erotion to clean up separation
+  // 4: Apply initial, aggressive erosion to clean up separation
   apply_erosion(gray_image, new_gray_image, 21, 5, 5); // 97 ms
-  save_grayscale_image("step_4.bmp",new_gray_image, rgb_image); // 22 ms
+  save_grayscale_image("step_3.bmp",new_gray_image, rgb_image); // 22 ms
 
   char file_name[12];
-  // Erode from step 5 onwards... (maxing out at 20 - 5 = 15 erosion steps, less will likely be needed.)
-  for(int s = 5; s < 20; s++) {
+  // Erode from step 5 onwards... (maxing out at 19 - 4 = 15 erosion steps, less will likely be needed.)
+  for(int s = 4; s < 19; s++) {
     sprintf(file_name,"step_%d.bmp", s);
-    printf("Erosion step: %d\n", s - 4);
+    printf("Erosion Step: %d\n", s - 3);
 
     if(s % 2) {
       if(apply_erosion(new_gray_image, gray_image, 7, 3, 3)) { // 34 ms
-        break;
+        break; // image is completely eroded
       }
       cell_amount += count_cells(gray_image, final_image, cell_x, cell_y, cell_amount); // 2 ms
       save_grayscale_image(file_name,gray_image, rgb_image); // 22 ms
     }
     else {
       if(apply_erosion(gray_image, new_gray_image, 7, 3, 3)) { // 34 ms
-        break;
+        break; // image is completely eroded
       }
       cell_amount += count_cells(new_gray_image, final_image, cell_x, cell_y, cell_amount); // 2 ms
       save_grayscale_image(file_name,new_gray_image, rgb_image); // 22 ms
