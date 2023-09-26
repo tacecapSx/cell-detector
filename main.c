@@ -6,14 +6,27 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 #include "cbmp.h"
 
 // Declaring variables
-  //Declaring the array to store the image (unsigned char = unsigned 8 bit)
+  //Runtime analysis
+  int time_elapsed;
+  #define START_TIMER clock_t start_time = clock()
+  #define END_TIMER clock_t end_time = clock()
+  #define CALCULATE_TIME ((int)(end_time - start_time))
+
+  //Declaring the arrays to store the images (unsigned char = unsigned 8 bit)
   unsigned char rgb_image[BMP_WIDTH][BMP_HEIGHT][BMP_CHANNELS];
   unsigned char final_image[BMP_WIDTH][BMP_HEIGHT][BMP_CHANNELS];
   unsigned char gray_image[BMP_WIDTH][BMP_HEIGHT];
   unsigned char new_gray_image[BMP_WIDTH][BMP_HEIGHT];
+
+  //Counting cells
+  #define CELL_MAX 500
+  int cell_amount = 0;
+  int cell_x[CELL_MAX];
+  int cell_y[CELL_MAX];
 
 void set_pixel(int x, int y, unsigned char val, unsigned char input_image[BMP_WIDTH][BMP_HEIGHT]){
   input_image[x][y] = val;
@@ -72,7 +85,7 @@ void apply_threshold(unsigned char threshold, unsigned char input_image[BMP_WIDT
   }
 }
 
-void seperate_cells(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT]){
+void separate_cells(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT]){
   int check_width = 20;
   int check_height = 20;
   int found = 0;
@@ -166,7 +179,7 @@ void save_grayscale_image(char file_name[11], unsigned char gray_image[BMP_WIDTH
   write_bitmap(rgb_image, file_name);
 }
 
-int count_cells(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned char rgb_image[BMP_WIDTH][BMP_HEIGHT][BMP_CHANNELS]){
+int count_cells(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned char rgb_image[BMP_WIDTH][BMP_HEIGHT][BMP_CHANNELS], int cell_x[CELL_MAX], int cell_y[CELL_MAX], int cell_amount){
   int check_width = 8;
   int check_height = 8;
   int found = 0;
@@ -195,6 +208,9 @@ int count_cells(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned char 
       }
 
       if (found == 1){
+        cell_x[cell_amount + count] = i + 1;
+        cell_y[cell_amount + count] = j + 1;
+
         for(int k = 0; k < 6; k ++){
           for(int l = 0; l < 6; l ++){
             rgb_image[i+k + check_width/2][j + l + check_height / 2][0] = 255;
@@ -223,11 +239,11 @@ int count_cells(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned char 
 //Main function
 int main(int argc, char** argv)
 {
-  //argc counts how may arguments are passed
   //argv[0] is a string with the name of the program
   //argv[1] is the first command line argument (input image)
 
-  int cell_amount = 0;
+  // Start timer (to time execution of the entire program in this case)
+  START_TIMER;
 
   //Checking that 2 arguments are passed
   if (argc != 2)
@@ -236,52 +252,66 @@ int main(int argc, char** argv)
       exit(1);
   }
 
-  //Load image from file
+  // 1: Load image from file
   read_bitmap(argv[1], rgb_image);
   read_bitmap(argv[1], final_image);
-  write_bitmap(rgb_image, "Step1.bmp");
+  write_bitmap(rgb_image, "step_1.bmp");
 
   // Convert to grayscale
-  convert_grayscale(rgb_image,gray_image);
+  convert_grayscale(rgb_image,gray_image); // 3 ms
 
-  // apply threshold
-  apply_threshold(95, gray_image);
-  save_grayscale_image("Step2.bmp",gray_image, rgb_image);
+  // 2: Apply binary threshold
+  apply_threshold(95, gray_image); // 1 ms
+  save_grayscale_image("step_2.bmp",gray_image, rgb_image); // 22 ms
 
-  // separate cells
-  seperate_cells(gray_image);
-  save_grayscale_image("Step3.bmp",gray_image, rgb_image);
+  // 3: Separate cells
+  separate_cells(gray_image); // 2 ms
+  save_grayscale_image("step_3.bmp",gray_image, rgb_image); // 22 ms
 
-  // apply initial, aggressive erotion
-  apply_erosion(gray_image, new_gray_image, 21, 5, 5);
-  save_grayscale_image("Step4.bmp",new_gray_image, rgb_image);
+  // 4: Apply initial, aggressive erotion to clean up separation
+  apply_erosion(gray_image, new_gray_image, 21, 5, 5); // 97 ms
+  save_grayscale_image("step_4.bmp",new_gray_image, rgb_image); // 22 ms
 
-  char file_name[11];
-  // Erode from step 5 onwards... (maxing out at 20 - 5 = 15 erosion steps, less will be needed.)
+  char file_name[12];
+  // Erode from step 5 onwards... (maxing out at 20 - 5 = 15 erosion steps, less will likely be needed.)
   for(int s = 5; s < 20; s++) {
-    sprintf(file_name,"Step%d.bmp", s);
+    sprintf(file_name,"step_%d.bmp", s);
     printf("Erosion step: %d\n", s - 4);
 
     if(s % 2) {
-      if(apply_erosion(new_gray_image, gray_image, 7, 3, 3)) {
+      if(apply_erosion(new_gray_image, gray_image, 7, 3, 3)) { // 34 ms
         break;
       }
-      cell_amount += count_cells(gray_image, final_image);
-      save_grayscale_image(file_name,gray_image, rgb_image);
+      cell_amount += count_cells(gray_image, final_image, cell_x, cell_y, cell_amount); // 2 ms
+      save_grayscale_image(file_name,gray_image, rgb_image); // 22 ms
     }
     else {
-      if(apply_erosion(gray_image, new_gray_image, 7, 3, 3)) {
+      if(apply_erosion(gray_image, new_gray_image, 7, 3, 3)) { // 34 ms
         break;
       }
-      cell_amount += count_cells(new_gray_image, final_image);
-      save_grayscale_image(file_name,new_gray_image, rgb_image);
+      cell_amount += count_cells(new_gray_image, final_image, cell_x, cell_y, cell_amount); // 2 ms
+      save_grayscale_image(file_name,new_gray_image, rgb_image); // 22 ms
     }
   }
 
-  write_bitmap(final_image, "output.bmp");
+  write_bitmap(final_image, "output_image.bmp");
 
-  printf("Cell Amount is: %i\n", cell_amount);
+  printf("\nCell Amount is: %i\n\nFound cells at these coordinates:\n", cell_amount);
+  
+  int i = 0;
+  while(cell_x[i] != 0) {
+    printf("[%u, %u], ", cell_x[i], cell_y[i]);
 
-  printf("Done!\n");
+    i++;
+    if(i % 6 == 0) {
+      printf("\n");
+    }
+  }
+
+  printf("\n\nDone!\n");
+
+  END_TIMER;
+  time_elapsed = CALCULATE_TIME;
+  printf("Total program time: %d ms\n", time_elapsed);
   return 0;
 }

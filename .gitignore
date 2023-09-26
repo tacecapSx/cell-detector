@@ -1,7 +1,7 @@
 # Code output
-Step?.bmp
-Step??.bmp
-output.bmp
+step_?.bmp
+step_??.bmp
+output_image.bmp
 
 # Prerequisites
 *.d
