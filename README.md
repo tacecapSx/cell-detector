@@ -5,11 +5,12 @@ A solution to assignment 1 of Computer Systems (02132) made by Martin Handest [s
 - [x] Load input image
 - [x] Convert to gray-scale
 - [x] Apply binary threshold
-- [ ] Erode image
-- [ ] Detect spots (cells)
-- [ ] Generate output image (mark cells)
+- [x] **Perform separation**
+- [x] Erode image
+- [x] Detect spots (cells)
+- [x] Generate output image (mark cells)
 - [x] Save output image
-- [ ] Print results
+- [x] Print results
 
 ## Original Assignment Readme:
 This folder contains code and material for the Assignment 1.
