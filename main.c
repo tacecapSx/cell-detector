@@ -115,6 +115,16 @@ void separate_cells(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT]){
   }
 }
 
+void fix_slicing(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT]){
+  for(int i = 1; i < BMP_HEIGHT - 1; i++){
+    for(int j = 1; j < BMP_WIDTH - 1; j++){
+      if(input_image[i][j] == 0 && input_image[i][j - 1] == 255 && input_image[i][j + 1] == 255) {
+        input_image[i][j] = 255;
+      }
+    }
+  }
+}
+
 int clamp(int val, int min, int max) {
   if(val < min) {
     return min;
@@ -210,8 +220,8 @@ int count_cells(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned char 
         cell_x[cell_amount + count] = i + 1;
         cell_y[cell_amount + count] = j + 1;
 
-        for(int k = 0; k < 6; k ++){
-          for(int l = 0; l < 6; l ++){
+        for(int k = 0; k < 6 && i + k + check_width/2 < BMP_WIDTH; k ++){
+          for(int l = 0; l < 6 && j + l + check_height/2 < BMP_HEIGHT; l ++){
             rgb_image[i+k + check_width/2][j + l + check_height / 2][0] = 255;
             rgb_image[i+k + check_width/2][j + l + check_height / 2][1] = 0;
             rgb_image[i+k + check_width/2][j + l + check_height / 2][2] = 0;
@@ -267,18 +277,22 @@ int main(int argc, char** argv)
   separate_cells(gray_image); // 2 ms
   save_grayscale_image("step_2.bmp",gray_image, rgb_image); // 22 ms
 
-  // 4: Apply initial, aggressive erosion to clean up separation
+  // 4: Fix slicing
+  fix_slicing(gray_image); // 1 ms
+  save_grayscale_image("step_3.bmp",gray_image, rgb_image); // 22 ms
+
+  // 5: Apply initial, aggressive erosion to clean up separation
   apply_erosion(gray_image, new_gray_image, 21, 5, 5); // 97 ms
-  save_grayscale_image("step_3.bmp",new_gray_image, rgb_image); // 22 ms
+  save_grayscale_image("step_4.bmp",new_gray_image, rgb_image); // 22 ms
 
   char file_name[12];
-  // Erode from step 5 onwards... (maxing out at 19 - 4 = 15 erosion steps, less will likely be needed.)
-  for(int s = 4; s < 19; s++) {
+  // Erode from step 5 onwards... (maxing out at 20 - 5 = 15 erosion steps, less will likely be needed.)
+  for(int s = 5; s < 20; s++) {
     sprintf(file_name,"step_%d.bmp", s);
-    printf("Erosion Step: %d\n", s - 3);
+    printf("Erosion Step: %d\n", s - 4);
 
-    unsigned char (*input_image)[BMP_HEIGHT] = s % 2 ? gray_image : new_gray_image;
-    unsigned char (*output_image)[BMP_HEIGHT] = s % 2 ? new_gray_image : gray_image;
+    unsigned char (*input_image)[BMP_HEIGHT] = s % 2 ? new_gray_image : gray_image;
+    unsigned char (*output_image)[BMP_HEIGHT] = s % 2 ? gray_image : new_gray_image;
 
     if(apply_erosion(input_image, output_image, 7, 3, 3)) { // 34 ms
       break; // image is completely eroded

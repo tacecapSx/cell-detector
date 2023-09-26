@@ -6,6 +6,7 @@ A solution to assignment 1 of Computer Systems (02132) made by Martin Handest [s
 - [x] Convert to gray-scale
 - [x] Apply binary threshold
 - [x] **Perform separation**
+- [x] **Fix slicing**
 - [x] Erode image
 - [x] Detect spots (cells)
 - [x] Generate output image (mark cells)
