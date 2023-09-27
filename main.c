@@ -28,28 +28,6 @@
   int cell_x[CELL_MAX];
   int cell_y[CELL_MAX];
 
-void set_pixel(int x, int y, unsigned char val, unsigned char input_image[BMP_WIDTH][BMP_HEIGHT]){
-  input_image[x][y] = val;
-}
-
-unsigned char get_pixel(int x, int y, unsigned char input_image[BMP_WIDTH][BMP_HEIGHT]){
-  return input_image[x][y];
-}
-
-//Function to invert pixels of an image (negative)
-void invert(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT][BMP_CHANNELS], unsigned char output_image[BMP_WIDTH][BMP_HEIGHT][BMP_CHANNELS]){
-  for (int x = 0; x < BMP_WIDTH; x++)
-  {
-    for (int y = 0; y < BMP_HEIGHT; y++)
-    {
-      for (int c = 0; c < BMP_CHANNELS; c++)
-      {
-      output_image[x][y][c] = 255 - input_image[x][y][c];
-      }
-    }
-  }
-}
-
 void convert_grayscale(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT][BMP_CHANNELS], unsigned char output_image[BMP_WIDTH][BMP_HEIGHT]) {
   for(int x = 0; x < BMP_WIDTH; x++)
   {
@@ -143,19 +121,26 @@ int apply_erosion(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned cha
   {
     for(int y = 0; y < BMP_HEIGHT; y++)
     {
-      int counter = 0;
-      for(int x_offset = 0; x_offset < width; x_offset++)
+      if(input_image[x][y] == 255)
       {
-        for(int y_offset = 0; y_offset < height; y_offset++)
+        int counter = 0;
+        for(int x_offset = 0; x_offset < width; x_offset++)
         {
-          if(input_image[clamp(x-(width-1) / 2+x_offset,0,BMP_WIDTH-1)][clamp(y-(height-1) / 2+y_offset,0,BMP_HEIGHT-1)]) {
-            counter++;
+          for(int y_offset = 0; y_offset < height; y_offset++)
+          {
+            if(input_image[clamp(x-(width-1) / 2+x_offset,0,BMP_WIDTH-1)][clamp(y-(height-1) / 2+y_offset,0,BMP_HEIGHT-1)]) {
+              counter++;
+            }
           }
         }
-      }
 
-      if(input_image[x][y] == 255 && counter > min_neighbors) {
-        output_image[x][y] = 255;
+        if(counter > min_neighbors) {
+          output_image[x][y] = 255;
+        }
+        else {
+          output_image[x][y] = 0;
+          total_dark++;
+        }
       }
       else {
         output_image[x][y] = 0;
@@ -283,7 +268,7 @@ int main(int argc, char** argv)
   save_grayscale_image("step_3.bmp",gray_image, rgb_image); // 22 ms
 
   // 5: Apply initial, aggressive erosion to clean up separation
-  apply_erosion(gray_image, new_gray_image, 21, 5, 5); // 97 ms
+  apply_erosion(gray_image, new_gray_image, 21, 5, 5); // 7 ms
   save_grayscale_image("step_4.bmp",new_gray_image, rgb_image); // 22 ms
 
   char file_name[12];
@@ -295,7 +280,7 @@ int main(int argc, char** argv)
     unsigned char (*input_image)[BMP_HEIGHT] = s % 2 ? new_gray_image : gray_image;
     unsigned char (*output_image)[BMP_HEIGHT] = s % 2 ? gray_image : new_gray_image;
 
-    if(apply_erosion(input_image, output_image, 7, 3, 3)) { // 34 ms
+    if(apply_erosion(input_image, output_image, 7, 3, 3)) { // 1-3 ms
       break; // image is completely eroded
     }
     cell_amount += count_cells(output_image, final_image, cell_x, cell_y, cell_amount); // 2 ms
