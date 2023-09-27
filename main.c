@@ -196,8 +196,8 @@ int count_cells(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned char 
   int count = 0;
   
   //loop through grid and area
-  for(int i = -1; i < BMP_WIDTH+1; i ++){
-    for(int j = -1; j < BMP_HEIGHT+1; j ++){
+  for(int i = -1; i < BMP_WIDTH; i ++){
+    for(int j = -1; j < BMP_HEIGHT; j ++){
       if (input_image[i + (check_width-1)/2][j+(check_height-1)/2] == 255){
         found = 1;
       }
@@ -217,8 +217,8 @@ int count_cells(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned char 
       }
 
       if (found == 1){
-        cell_x[cell_amount + count] = i + 1;
-        cell_y[cell_amount + count] = j + 1;
+        cell_x[cell_amount + count] = clamp(i,1,BMP_WIDTH);
+        cell_y[cell_amount + count] = clamp(j,1,BMP_HEIGHT);
 
         for(int k = 0; k < 6 && i + k + check_width/2 < BMP_WIDTH; k ++){
           for(int l = 0; l < 6 && j + l + check_height/2 < BMP_HEIGHT; l ++){
@@ -308,7 +308,7 @@ int main(int argc, char** argv)
   
   int i = 0;
   while(cell_x[i] != 0) {
-    printf("[%u, %u], ", cell_x[i], cell_y[i]);
+    printf("[%u, %u]; ", cell_x[i], cell_y[i]);
 
     i++;
     if(i % 6 == 0) {
