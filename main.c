@@ -250,14 +250,15 @@ int main(int argc, char** argv)
 {
   //argv[0] is a string with the name of the program
   //argv[1] is the first command line argument (input image)
+  //argv[2] is the second command line argument (output image)
 
   // Start timer (to time execution of the entire program in this case)
   START_TIMER;
 
-  //Checking that 2 arguments are passed
-  if (argc != 2)
+  //Checking that 3 arguments are passed
+  if (argc != 3)
   {
-      fprintf(stderr, "Usage: %s <input file path>\n", argv[0]);
+      fprintf(stderr, "Usage: %s <input file path> <output file path>\n", argv[0]);
       exit(1);
   }
 
@@ -301,7 +302,7 @@ int main(int argc, char** argv)
     save_grayscale_image(file_name, output_image, rgb_image); // 22 ms
   }
 
-  write_bitmap(final_image, "output_image.bmp");
+  write_bitmap(final_image, argv[2]);
 
   printf("\nCell Amount is: %i\n\nFound cells at these coordinates:\n", cell_amount);
   
