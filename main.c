@@ -18,7 +18,6 @@
 
   //Declaring the arrays to store the images (unsigned char = unsigned 8 bit)
   unsigned char rgb_image[BMP_WIDTH][BMP_HEIGHT][BMP_CHANNELS];
-  unsigned char final_image[BMP_WIDTH][BMP_HEIGHT][BMP_CHANNELS];
   unsigned char gray_image[BMP_WIDTH][BMP_HEIGHT];
   unsigned char new_gray_image[BMP_WIDTH][BMP_HEIGHT];
 
@@ -151,20 +150,6 @@ int apply_erosion(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned cha
   return total_dark == BMP_WIDTH * BMP_HEIGHT;
 }
 
-unsigned char get_average_color(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT]) {
-  int sum = 0;
-
-  for(int x = 0; x < BMP_WIDTH; x++)
-  {
-    for(int y = 0; y < BMP_HEIGHT; y++)
-    {
-      sum += (int)input_image[x][y];
-    }
-  }
-
-  return sum / (BMP_WIDTH * BMP_HEIGHT);
-}
-
 void save_grayscale_image(char file_name[11], unsigned char gray_image[BMP_WIDTH][BMP_HEIGHT], unsigned char rgb_image[BMP_WIDTH][BMP_HEIGHT][BMP_CHANNELS]) {
   // Convert back to RGB
   convert_rgb(gray_image, rgb_image);
@@ -173,7 +158,7 @@ void save_grayscale_image(char file_name[11], unsigned char gray_image[BMP_WIDTH
   write_bitmap(rgb_image, file_name);
 }
 
-int count_cells(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned char rgb_image[BMP_WIDTH][BMP_HEIGHT][BMP_CHANNELS], int cell_x[CELL_MAX], int cell_y[CELL_MAX], int cell_amount){
+int count_cells(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], int cell_x[CELL_MAX], int cell_y[CELL_MAX], int cell_amount){
   int check_width = 8;
   int check_height = 8;
   int found = 0;
@@ -205,14 +190,6 @@ int count_cells(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned char 
         cell_x[cell_amount + count] = clamp(i,1,BMP_WIDTH);
         cell_y[cell_amount + count] = clamp(j,1,BMP_HEIGHT);
 
-        for(int k = 0; k < 6 && i + k + check_width/2 < BMP_WIDTH; k ++){
-          for(int l = 0; l < 6 && j + l + check_height/2 < BMP_HEIGHT; l ++){
-            rgb_image[i+k + check_width/2][j + l + check_height / 2][0] = 255;
-            rgb_image[i+k + check_width/2][j + l + check_height / 2][1] = 0;
-            rgb_image[i+k + check_width/2][j + l + check_height / 2][2] = 0;
-          }
-        }
-
         count++;
         for(int k = 1; k < check_width - 1; k ++){
           for(int l = 1; l < check_height - 1; l ++){
@@ -228,6 +205,21 @@ int count_cells(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned char 
   }
 
   return count;
+}
+
+void mark_cells(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT][BMP_CHANNELS], int cell_x[CELL_MAX], int cell_y[CELL_MAX], int cell_amount) {
+  int check_width = 8;
+  int check_height = 8;
+  
+  for(int i = 0; i < cell_amount; i++) {
+    for(int k = 0; k < 6 && cell_x[i] + k + check_width/2 < BMP_WIDTH; k ++){
+      for(int l = 0; l < 6 && cell_y[i] + l + check_height/2 < BMP_HEIGHT; l ++){
+        input_image[cell_x[i]+k + check_width/2][cell_y[i] + l + check_height / 2][0] = 255;
+        input_image[cell_x[i]+k + check_width/2][cell_y[i] + l + check_height / 2][1] = 0;
+        input_image[cell_x[i]+k + check_width/2][cell_y[i] + l + check_height / 2][2] = 0;
+      }
+    }
+  }
 }
 
 //Main function
@@ -248,11 +240,11 @@ int main(int argc, char** argv)
   }
 
   // 1: Load image from file
-  read_bitmap(argv[1], final_image);
-  write_bitmap(final_image, "step_0.bmp");
+  read_bitmap(argv[1], rgb_image);
+  write_bitmap(rgb_image, "step_0.bmp");
 
   // Convert to grayscale
-  convert_grayscale(final_image,gray_image); // 3 ms
+  convert_grayscale(rgb_image,gray_image); // 3 ms
 
   // 2: Apply binary threshold
   apply_threshold(95, gray_image); // 1 ms
@@ -282,11 +274,16 @@ int main(int argc, char** argv)
     if(apply_erosion(input_image, output_image, 7, 3, 3)) { // 1-3 ms
       break; // image is completely eroded
     }
-    cell_amount += count_cells(output_image, final_image, cell_x, cell_y, cell_amount); // 2 ms
+    cell_amount += count_cells(output_image, cell_x, cell_y, cell_amount); // 2 ms
     save_grayscale_image(file_name, output_image, rgb_image); // 22 ms
   }
 
-  write_bitmap(final_image, argv[2]);
+  // Reload image since erosion has removed all original image data
+  read_bitmap(argv[1], rgb_image);
+  // Mark cells with red dot
+  mark_cells(rgb_image, cell_x, cell_y, cell_amount);
+
+  write_bitmap(rgb_image, argv[2]);
 
   printf("\nCell Amount is: %i\n\nFound cells at these coordinates:\n", cell_amount);
   
