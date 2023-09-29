@@ -1,6 +1,26 @@
 # cell-detector
 A solution to assignment 1 of Computer Systems (02132) made by Martin Handest [s224755] ([@tacecapSx](https://github.com/tacecapSx)) and Oskar Holland [s224768] ([@pandekagee](https://github.com/pandekagee)) in C.
 
+## Instructions
+### Cell detection
+To compile the main program, simply write:
+
+``gcc cbmp.c main.c -o main.exe -std=c99``
+
+
+...And to run the program, write:
+
+``./main.exe <input filename> <output filename>``
+
+### Automated tests
+If you wish to run the program on all sample images automatically, compile the perform_all program with:
+
+``gcc perform_all.c -o perform_all.exe -std=c99``
+
+...And run it with:
+
+``./perform_all.exe`` (make sure a main.exe file exists!)
+
 ## Algorithm Progress
 - [x] Load input image
 - [x] Convert to gray-scale
