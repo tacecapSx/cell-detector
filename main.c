@@ -248,12 +248,11 @@ int main(int argc, char** argv)
   }
 
   // 1: Load image from file
-  read_bitmap(argv[1], rgb_image);
   read_bitmap(argv[1], final_image);
-  write_bitmap(rgb_image, "step_0.bmp");
+  write_bitmap(final_image, "step_0.bmp");
 
   // Convert to grayscale
-  convert_grayscale(rgb_image,gray_image); // 3 ms
+  convert_grayscale(final_image,gray_image); // 3 ms
 
   // 2: Apply binary threshold
   apply_threshold(95, gray_image); // 1 ms
