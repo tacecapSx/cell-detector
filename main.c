@@ -147,7 +147,8 @@ int apply_erosion(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT], unsigned cha
       }
     }
   }
-  return total_dark == BMP_WIDTH * BMP_HEIGHT;
+
+  return total_dark == BMP_WIDTH * BMP_HEIGHT; // return true if all pixels have been eroded away
 }
 
 void save_grayscale_image(char file_name[11], unsigned char gray_image[BMP_WIDTH][BMP_HEIGHT], unsigned char rgb_image[BMP_WIDTH][BMP_HEIGHT][BMP_CHANNELS]) {
@@ -268,6 +269,7 @@ int main(int argc, char** argv)
     sprintf(file_name,"step_%d.bmp", s);
     printf("Erosion Step: %d\n", s - 4);
 
+    // Swap references to read/write between the two grayscale images each iteration
     unsigned char (*input_image)[BMP_HEIGHT] = s % 2 ? new_gray_image : gray_image;
     unsigned char (*output_image)[BMP_HEIGHT] = s % 2 ? gray_image : new_gray_image;
 
@@ -281,12 +283,14 @@ int main(int argc, char** argv)
   // Reload image since erosion has removed all original image data
   read_bitmap(argv[1], rgb_image);
   // Mark cells with red dot
-  mark_cells(rgb_image, cell_x, cell_y, cell_amount);
+  mark_cells(rgb_image, cell_x, cell_y, cell_amount); // 3 ms
 
   write_bitmap(rgb_image, argv[2]);
 
+  // Print cell amount
   printf("\nCell Amount is: %i\n\nFound cells at these coordinates:\n", cell_amount);
   
+  // Print all coordinates for found cells
   int i = 0;
   while(cell_x[i] != 0) {
     printf("[%u, %u]; ", cell_x[i], cell_y[i]);
